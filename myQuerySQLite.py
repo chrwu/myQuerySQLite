@@ -4,107 +4,169 @@ from collections import defaultdict
 
 class myQuerySQLite:
     def __init__(self, dbname, dbtable):
-        self.dbname = dbname
-        self.dbtable = dbtable
         self.nSubject = 3
         self.ntlv = 6
-        self.subjectMap = {'1':'chinese','2':'english','3':'math'}
+        self.subjectMap = {0:'all',1:'chinese',2:'english',3:'math'}
 
+        # db setting
+        self.dbname = dbname
+        self.dbtable = dbtable
         self.conn = sqlite3.connect(dbname)
-        self.c = self.conn.cursor()
-        self.c.execute('''CREATE TABLE if not exists classA (sid INTERGER, name TEXT, gender TEXT, score BLOB)''')   
-        
-        
+        self.cursor = self.conn.cursor()
+        self.__creatTable(self.dbtable)
+        self.NoOfStudent = self.getNoOfStudent()
+
+    def __creatTable(self, tablename='classA'):
+        sql = '''CREATE TABLE if not exists %s (sid INTERGER, name TEXT, gender TEXT, score BLOB)''' % tablename
+        try:
+            result = self.cursor.execute(sql)
+        except Exception as e:
+            print 'Create table failed!'
+        return result
+
     def insertData(self, data, flag=False):
         if flag:
-            no = self.getNoOfStudent()
             insertdata = []
             for i in range(len(data)):
-                x1 = data[i][0]+no
-                x2 = data[i][1][0]+str(int(data[i][1][1:])+no) 
-                insertdata.append((x1,x2,data[i][2],data[i][3]))
-        #print insertdata
-        self.c.executemany('INSERT INTO classA VALUES (?, ?, ?, ?)', insertdata)
-        self.conn.commit()
+                sid = data[i][0]+self.NoOfStudent
+                name = data[i][1][0]+str(int(data[i][1][1:])+self.NoOfStudent)
+                insertdata.append((sid,name,data[i][2],data[i][3]))
+            try:
+                self.cursor.executemany('INSERT INTO classA VALUES (?, ?, ?, ?)', insertdata)
+                self.conn.commit()
+            except:
+                print 'Insert data failed!'
 
     def closeDBConnection(self):
-        self.c.close()
+        self.cursor.close()
         self.conn.close()
+
+    # Display students' name by gender (defalut:F&M)
+    def displayStudentNamesByGender(self, sex = 'all'):
+        students = self.getStudentNamesByGender(sex)
+        print "There are %s stuednts" % len(students) + " with gender %s :" % sex
+        for student in self.getStudentNamesByGender(sex):
+            print "Student's name: %s" % student[0]
         
-    # Display students' name by gender (defalut:F&M)    
-    def displayStudentNames(self, sex='all'): 
-        tmp = '''SELECT DISTINCT * FROM classA WHERE gender %s'''
-        if sex == 'F':
-            sql = tmp % "= F"
-        elif sex == 'M':
-            sql = tmp % "= M"
+    def getStudentNamesByGender(self, sex='all'):
+        sql = '''SELECT name, gender FROM classA WHERE gender %s'''
+        if sex == 'Female':
+            sql = sql % "= \'F\'"
+        elif sex == 'Male':
+            sql = sql % "= \'M\'"
         else:
-            sql = tmp % "IS NOT NULL"
-        self.c.execute(sql)
+            sql = sql % "IS NOT NULL"
+        
+        try:
+            result = self.cursor.execute(sql)
+        except:
+            print "Query Students' name failed"
+        return [student for student in result]
+
+    def displayNoOfStudent(self):
+        print "There are %s students in classA" % self.NoOfStudent
 
     # Get #of students
     def getNoOfStudent(self):
         sql = '''SELECT COUNT(DISTINCT sid) FROM classA WHERE sid IS NOT NULL'''
-        tmp = self.c.execute(sql)
-        
-        no = [x[0] for x in tmp][0]
-        print "# of students:", no
+        try:
+            result = self.cursor.execute(sql)
+            no = [x[0] for x in result][0]
+        except:
+            print "getNoOfStudent failed!"
         return no
-    
-        
-        
+
     # Get Score data with name
     def getScoreData(self):
         sql = '''SELECT name,score FROM classA'''
-        data = self.c.execute(sql)
-        
+        try:
+            data = self.cursor.execute(sql)
+        except:
+            print "getScoreData failed!"
+
         sc = [{}]*self.nSubject
+        print data
         for x in data:
             name = x[0]
             scData = str(x[1]).split("0x")[1:]
-            
+
             for i in range(self.nSubject):
                 tag = int(scData[self.ntlv*i],16)
                 length = int(scData[self.ntlv*i+1],16)
-                if length == 4: 
+                if length == 4:
                     value = int(scData[self.ntlv*i+self.ntlv-1],16)
-                else: ## ???
+                else:
                     value = 0
-                
                 category = tag-1
                 sc[category][name] = value
-                #print tag, length, value
         return sc
     
-    # Get the highest Socre People by subject  
-    def displayHighestScore(self):
-        sc = self.getScoreData()
-        for i in range(len(sc)):
-            highestsc = sorted(sc[i].items(), key=operator.itemgetter(1))[-1]
-            msg = "The student:%s have the highest score:%s of subject:" % highestsc
-            msg += self.subjectMap[str(i+1)]
-            print msg,"\n"
-            
-    # Display Ranking list    
+    def __getCategory(self, subject):
+        subject = subject.lower()
+        category = []
+        if subject not in self.subjectMap.values():
+            print "The input subject %s didn't exist!" % subject
+        else:
+            if subject == 'chinese':
+                category.append(1)
+            elif subject == 'english':
+                category.append(2)
+            elif subject == 'math' :
+                category.append(3)
+            else: # all
+                category = [i for i in xrange(4) if i > 0]
+        return category
+    
+    def displayHighestScore(self, subject='all'):
+        highestscore = self.getHighestScore(subject)
+        msg = "The student %s has the highest score %s "
+        
+        if subject == 'all':
+            for i in xrange(1,len(self.subjectMap)):
+                print msg % highestscore[i-1] + " in suject %s" % self.subjectMap[i]
+        else:
+            print msg % highestscore[0] + " in suject %s" % subject
+    
+    # Get the highest Socre People by subject
+    def getHighestScore(self, subject='all'):
+        category = self.__getCategory(subject)
+        score = self.getScoreData()
+        highestscore = [sorted(score[i-1].items(), key=operator.itemgetter(1))[-1] for i in category]
+        return highestscore
+
+    # Get Ranking list
     def displayRankingList(self):
-        sc = self.getScoreData()
-        sumSc={}
-        sumSc = defaultdict(lambda: 0, sumSc)
-        
+        data = self.getRankingList()[::-1]
+        for i in xrange(self.NoOfStudent):
+            print "rank:",i+1," name:%s total score:%s" % data[i]
+
+    def getRankingList(self):
+        score = self.getScoreData()
+        sumScore={}
+        sumScore = defaultdict(lambda: 0, sumScore)
+
         for i in range(self.nSubject):
-            for k in sc[i].keys():
-                sumSc[k] += sc[i][k]
-        rank = sorted(sumSc.items(), key=operator.itemgetter(1))
-        for i in range(len(rank)):
-            print "rank:",i+1," name:%s total score:%s" % rank[i]
+            for k in score[i].keys():
+                sumScore[k] += score[i][k]
+        rank = sorted(sumScore.items(), key=operator.itemgetter(1))
+        return rank
+
+    # Display Students whose score are above sc (default:60)
+    def displayStudentAboveScore(self, subject='all', abscore=60):
+        data = self.getStudentAboveScore(subject, abscore)
+        category = self.__getCategory(subject)
+        if len(category) == 1:
+            print "Score >= %s" % abscore,"of Subject:%s" % self.subjectMap[category[0]]
+            for score in data[0]:
+                print "Student: %s score: %s" % score 
+        else:
+            for i in category:
+                print "Score >= %s" % abscore,"of Subject:%s" % self.subjectMap[i]
+                for score in data[i-1]:
+                    print "Student: %s score: %s" % score 
+                print "\n"
             
-            
-    # Display Students whose score are above sc (default:60)     
-    def displayByScore(self, subject='all', absc=60):
-        sc = self.getScoreData()
-        
-        for i in range(self.nSubject):
-            print "Score above:%s (contain)" % absc," of Subject:%s" % self.subjectMap[str(i+1)], "\n"
-            for k,v in sc[i].iteritems():
-                if v >= 60:
-                    print "name:%s score:%s" % (k,v)
+    def getStudentAboveScore(self, subject='all', abscore=60):
+        data = self.getScoreData()
+        category = self.__getCategory(subject)      
+        return [[score for score in data[i-1].items() if score[1] >= abscore] for i in category]        
