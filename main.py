@@ -1,34 +1,30 @@
-import myQuerySQLite as mq
-import random as rd
-
-
-def genData(n=20, nSubjects=3):
-    data = []
-    for i in range(n):
-        nSC = ''
-        l = str(hex(4))+str(hex(0))+str(hex(0))+str(hex(0))
-        for j in range(nSubjects):
-            jj = j+1
-            sc = rd.randint(0,100)
-            t = str(hex(jj))
-            v = str(hex(sc))  
-            nSC += t+l+v
-        ii = i+1
-        #print nSC
-        #print nSC.replace("Ox", "\\x")
-        x = (ii, 'a'+str(ii), rd.choice('MF'), mq.sqlite3.Binary(nSC))
-        data.append(x)
-    return data
+import myQuerySQLite 
 
 if __name__ == '__main__':
-    data = genData()
-
-    mqsqlite = mq.myQuerySQLite('chrwu.db','classA')
+    mqsqlite = myQuerySQLite('chrwu.db','classA')
+    data = mqsqlite.genData()
     mqsqlite.insertData(data)
-    mqsqlite.displayStudentNames()
-    mqsqlite.getNoOfStudent()
-    mqsqlite.displayHighestScore()
+
+    # 1.Display students' name by giving gender (default: all gender)
+    mqsqlite.displayStudentNamesByGender()
+    mqsqlite.displayStudentNamesByGender('Male')
+    mqsqlite.displayStudentNamesByGender('Female')
+    
+    # 2. Display # of students in class A
+    mqsqlite.displayNoOfStudent()
+    
+    # 3. Display the student's name who have the highest score by giving subject
+    mqsqlite.displayHighestScore('chinese')
+    mqsqlite.displayHighestScore('math')
+    mqsqlite.displayHighestScore('english')
+    mqsqlite.displayHighestScore('all')
+    
+    # 4. Display the ranking list in the class
     mqsqlite.displayRankingList()
-    mqsqlite.displayByScore()
+    
+    # 5. Display students' name whose score is above giving min. score and subject 
+    # (default: all subject & min=60)
+    mqsqlite.displayStudentAboveScore(abscore=70)
+    mqsqlite.displayStudentAboveScore(subject='math')
 
     mqsqlite.closeDBConnection()

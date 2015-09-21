@@ -1,5 +1,6 @@
 import operator
 import sqlite3
+import random as rd
 from collections import defaultdict
 
 class myQuerySQLite:
@@ -15,6 +16,10 @@ class myQuerySQLite:
         self.cursor = self.conn.cursor()
         self.__creatTable(self.dbtable)
         self.NoOfStudent = self.getNoOfStudent()
+    
+    def closeDBConnection(self):
+        self.cursor.close()
+        self.conn.close()
 
     def __creatTable(self, tablename='classA'):
         sql = '''CREATE TABLE if not exists %s (sid INTERGER, name TEXT, gender TEXT, score BLOB)''' % tablename
@@ -23,6 +28,19 @@ class myQuerySQLite:
         except Exception as e:
             print 'Create table failed!'
         return result
+    
+    def genData(self, nData=20, nSubjects=3):
+        data = []
+        for i in xrange(nData):
+            nScore = ''
+            length = str(hex(4))+str(hex(0))+str(hex(0))+str(hex(0))
+            for j in xrange(nSubjects):
+                score = rd.randint(0,100)
+                tag = str(hex(j+1))
+                value = str(hex(score))
+                nScore += tag+length+value
+            data.append((i+1, 'a'+str(i+1), rd.choice('MF'), sqlite3.Binary(nScore)))
+        return data
 
     def insertData(self, data, flag=False):
         if flag:
@@ -36,10 +54,6 @@ class myQuerySQLite:
                 self.conn.commit()
             except:
                 print 'Insert data failed!'
-
-    def closeDBConnection(self):
-        self.cursor.close()
-        self.conn.close()
 
     # Display students' name by gender (defalut:F&M)
     def displayStudentNamesByGender(self, sex = 'all'):
@@ -76,16 +90,15 @@ class myQuerySQLite:
             print "getNoOfStudent failed!"
         return no
 
-    # Get Score data with name
-    def getScoreData(self):
+    # Get Score data 
+    def __getScoreData(self):
         sql = '''SELECT name,score FROM classA'''
         try:
             data = self.cursor.execute(sql)
         except:
-            print "getScoreData failed!"
+            print "__getScoreData failed!"
 
-        sc = [{}]*self.nSubject
-        print data
+        score = [{}]*self.nSubject
         for x in data:
             name = x[0]
             scData = str(x[1]).split("0x")[1:]
@@ -98,8 +111,8 @@ class myQuerySQLite:
                 else:
                     value = 0
                 category = tag-1
-                sc[category][name] = value
-        return sc
+                score[category][name] = value
+        return score
     
     def __getCategory(self, subject):
         subject = subject.lower()
@@ -117,6 +130,7 @@ class myQuerySQLite:
                 category = [i for i in xrange(4) if i > 0]
         return category
     
+    # Display the highest Socre People by subject
     def displayHighestScore(self, subject='all'):
         highestscore = self.getHighestScore(subject)
         msg = "The student %s has the highest score %s "
@@ -127,21 +141,20 @@ class myQuerySQLite:
         else:
             print msg % highestscore[0] + " in suject %s" % subject
     
-    # Get the highest Socre People by subject
     def getHighestScore(self, subject='all'):
         category = self.__getCategory(subject)
-        score = self.getScoreData()
+        score = self.__getScoreData()
         highestscore = [sorted(score[i-1].items(), key=operator.itemgetter(1))[-1] for i in category]
         return highestscore
 
-    # Get Ranking list
+    # Display Ranking list
     def displayRankingList(self):
         data = self.getRankingList()[::-1]
         for i in xrange(self.NoOfStudent):
             print "rank:",i+1," name:%s total score:%s" % data[i]
 
     def getRankingList(self):
-        score = self.getScoreData()
+        score = self.__getScoreData()
         sumScore={}
         sumScore = defaultdict(lambda: 0, sumScore)
 
@@ -151,7 +164,7 @@ class myQuerySQLite:
         rank = sorted(sumScore.items(), key=operator.itemgetter(1))
         return rank
 
-    # Display Students whose score are above sc (default:60)
+    # Display Students whose score are above score (default:60)
     def displayStudentAboveScore(self, subject='all', abscore=60):
         data = self.getStudentAboveScore(subject, abscore)
         category = self.__getCategory(subject)
@@ -167,6 +180,6 @@ class myQuerySQLite:
                 print "\n"
             
     def getStudentAboveScore(self, subject='all', abscore=60):
-        data = self.getScoreData()
+        data = self.__getScoreData()
         category = self.__getCategory(subject)      
         return [[score for score in data[i-1].items() if score[1] >= abscore] for i in category]        
