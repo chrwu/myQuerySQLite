@@ -27,7 +27,7 @@ class myQuerySQLite:
     def insertData(self, data, flag=False):
         if flag:
             insertdata = []
-            for i in range(len(data)):
+            for i in xrange(len(data)):
                 sid = data[i][0]+self.NoOfStudent
                 name = data[i][1][0]+str(int(data[i][1][1:])+self.NoOfStudent)
                 insertdata.append((sid,name,data[i][2],data[i][3]))
@@ -90,7 +90,7 @@ class myQuerySQLite:
             name = x[0]
             scData = str(x[1]).split("0x")[1:]
 
-            for i in range(self.nSubject):
+            for i in xrange(self.nSubject):
                 tag = int(scData[self.ntlv*i],16)
                 length = int(scData[self.ntlv*i+1],16)
                 if length == 4:
@@ -145,7 +145,7 @@ class myQuerySQLite:
         sumScore={}
         sumScore = defaultdict(lambda: 0, sumScore)
 
-        for i in range(self.nSubject):
+        for i in xrange(self.nSubject):
             for k in score[i].keys():
                 sumScore[k] += score[i][k]
         rank = sorted(sumScore.items(), key=operator.itemgetter(1))
