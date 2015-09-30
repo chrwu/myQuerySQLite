@@ -26,9 +26,9 @@ class MyQuerySQLite:
         sql = '''CREATE TABLE if not exists %s (sid INTERGER, name TEXT, gender TEXT, score BLOB)''' % table_name
         try:
             result = self.cursor.execute(sql)
-            return result
         except:
             print "create new table failed!"
+        return result
 
     def generate_data(self, n_data=20, n_subjects=3):
         data = []
@@ -67,9 +67,9 @@ class MyQuerySQLite:
 
         try:
             result = self.cursor.execute(sql)
-            return [student for student in result]
         except:
             print "Query Students' name failed"
+        return [student for student in result]
 
     # Get #of students
     def get_no_of_student(self):
@@ -77,32 +77,33 @@ class MyQuerySQLite:
         try:
             result = self.cursor.execute(sql)
             no = [x[0] for x in result][0]
-            return no
         except:
             print "getNoOfStudent failed!"
+        return no
 
     # Get Score data 
     def __get_score_data(self):
         sql = '''SELECT name,score FROM classA'''
         try:
             data = self.cursor.execute(sql)
-            score = [{}] * self.n_subject
-            for x in data:
-                name = x[0]
-                score_data = str(x[1]).split("0x")[1:]
-
-                for i in xrange(self.n_subject):
-                    tag = int(score_data[self.n_tlv * i], 16)
-                    length = int(score_data[self.n_tlv * i + 1], 16)
-                    if length == 4:
-                        value = int(score_data[self.n_tlv * i + self.n_tlv - 1], 16)
-                    else:
-                        value = 0
-                    category = tag - 1
-                    score[category][name] = value
-            return score
         except:
             print "__getScoreData failed!"
+
+        score = [{}] * self.n_subject
+        for x in data:
+            name = x[0]
+            score_data = str(x[1]).split("0x")[1:]
+
+            for i in xrange(self.n_subject):
+                tag = int(score_data[self.n_tlv * i], 16)
+                length = int(score_data[self.n_tlv * i + 1], 16)
+                if length == 4:
+                    value = int(score_data[self.n_tlv * i + self.n_tlv - 1], 16)
+                else:
+                    value = 0
+                category = tag - 1
+                score[category][name] = value
+        return score
 
     def get_category(self, subject):
         subject = subject.lower()
@@ -121,21 +122,31 @@ class MyQuerySQLite:
     def get_highest_score(self, subject='all'):
         category = self.get_category(subject)
         score = self.__get_score_data()
-        highest_score = [sorted(score[i - 1].items(), key=operator.itemgetter(1))[-1] for i in category]
-        return highest_score
+        if score.count({}) == len(score):
+            return []
+        else:
+            highest_score = [sorted(score[i - 1].items(), key=operator.itemgetter(1))[-1] for i in category]
+            return highest_score
 
     def get_ranking_list(self):
         score = self.__get_score_data()
+        
         sum_score = {}
         sum_score = defaultdict(lambda: 0, sum_score)
 
-        for i in xrange(self.n_subject):
-            for k in score[i].keys():
-                sum_score[k] += score[i][k]
-        rank = sorted(sum_score.items(), key=operator.itemgetter(1))
-        return rank
+        if score.count({}) == len(score):
+            return []
+        else:
+            for i in xrange(self.n_subject):
+                for k in score[i].keys():
+                    sum_score[k] += score[i][k]
+            rank = sorted(sum_score.items(), key=operator.itemgetter(1))
+            return rank
 
     def get_student_above_score(self, subject='all', min_score=60):
         data = self.__get_score_data()
-        category = self.get_category(subject)
-        return [[score for score in data[i - 1].items() if score[1] >= min_score] for i in category]
+        if data.count({}) == len(data):
+            return []
+        else:
+            category = self.get_category(subject)
+            return [[score for score in data[i - 1].items() if score[1] >= min_score] for i in category]

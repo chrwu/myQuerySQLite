@@ -16,6 +16,9 @@ def display_no_of_student(self):
 # Display the highest Score People by subject
 def display_highest_score(obj, subject='all'):
     highest_score = obj.get_highest_score(subject)
+    if len(highest_score) == 0:
+        print "There's no data in database!"
+        return
     category = obj.get_category(subject)
     if len(category) == 0:
         print "There's no subject:", subject
@@ -39,6 +42,9 @@ def display_ranking_list(obj):
 # Display Students whose score are above score (default:60)
 def display_student_above_score(obj, subject='all', min_score=60):
     data = obj.get_student_above_score(subject, min_score)
+    if len(data) == 0:
+        print "There's no data in database!"
+        return
     category = obj.get_category(subject)
     if len(category) == 1:
         print "Score >= %s" % min_score, "of Subject:%s" % obj.subject_map[category[0]]
