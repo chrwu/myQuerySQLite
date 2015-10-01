@@ -2,14 +2,18 @@ import MyQuerySQLite as mq
 
 
 class DisplayDBContent(object):
-    def __init__(self, is_insert=False):
+    def __init__(self):
         self.__query = mq.MyQuerySQLite('chrwu.db', 'classA')
-        # 0. Generate data and insert data into database
-        data = self.__query.generate_data()
-        self.__query.insert_data(data, flag=is_insert)
+
+    def open_connection(self):
+        self.__query.db_connect()
 
     def close_connection(self):
-        self.__query.close_db_connection()
+        self.__query.db_disconnect()
+
+    def insert_new_data(self, is_insert=False):
+        data = self.__query.generate_data()
+        self.__query.insert_data(data, flag=is_insert)
 
     # Display students' name by gender (default :F&M)
     def display_student_names_by_gender(self, sex='all'):
@@ -64,7 +68,13 @@ class DisplayDBContent(object):
                 print "\n"
 
 if __name__ == '__main__':
-    obj = DisplayDBContent(True)
+    obj = DisplayDBContent()
+
+    # open db connection
+    obj.open_connection()
+
+    # 0. Generate data and insert data into database
+    obj.insert_new_data(is_insert=True)
 
     # 1.Display students' name by giving gender (default: all gender)
     obj.display_student_names_by_gender()
@@ -89,5 +99,6 @@ if __name__ == '__main__':
     obj.display_student_above_score(min_score=70)
     obj.display_student_above_score(subject='math')
 
+    # close db connection
     obj.close_connection()
 

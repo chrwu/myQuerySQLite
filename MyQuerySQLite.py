@@ -4,21 +4,21 @@ import random as rd
 from collections import defaultdict
 
 
-class MyQuerySQLite:
+class MyQuerySQLite(object):
     def __init__(self, db_name, db_table):
         self.n_subject = 3
         self.n_tlv = 6
         self.subject_map = {0: 'all', 1: 'chinese', 2: 'english', 3: 'math'}
-
-        # db setting
         self.db_name = db_name
         self.db_table = db_table
-        self.conn = sqlite3.connect(db_name)
+
+    def db_connect(self):
+        self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
         self.__create_table(self.db_table)
         self.no_of_student = self.get_no_of_student()
 
-    def close_db_connection(self):
+    def db_disconnect(self):
         self.cursor.close()
         self.conn.close()
 
@@ -105,6 +105,7 @@ class MyQuerySQLite:
                 score[category][name] = value
         return score
 
+    # get subject's category
     def get_category(self, subject):
         subject = subject.lower()
         category = []
@@ -119,6 +120,7 @@ class MyQuerySQLite:
                 category = [i for i in xrange(4) if i > 0]
         return category
 
+    # get the highest score by subject (default: all subjects resp.)
     def get_highest_score(self, subject='all'):
         category = self.get_category(subject)
         score = self.__get_score_data()
@@ -128,6 +130,7 @@ class MyQuerySQLite:
             highest_score = [sorted(score[i - 1].items(), key=operator.itemgetter(1))[-1] for i in category]
             return highest_score
 
+    # get the ranking list 
     def get_ranking_list(self):
         score = self.__get_score_data()
         
@@ -143,6 +146,7 @@ class MyQuerySQLite:
             rank = sorted(sum_score.items(), key=operator.itemgetter(1))
             return rank
 
+    # get the students' list whose score above the input score
     def get_student_above_score(self, subject='all', min_score=60):
         data = self.__get_score_data()
         if data.count({}) == len(data):
