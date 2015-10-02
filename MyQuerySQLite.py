@@ -11,16 +11,17 @@ class MyQuerySQLite(object):
         self.subject_map = {0: 'all', 1: 'chinese', 2: 'english', 3: 'math'}
         self.db_name = db_name
         self.db_table = db_table
-
+        self.__no_of_student = None
 
     def db_connect(self):
         self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
         self.__create_table(self.db_table)
-        self.__no_of_student = self.get_no_of_student()
 
     @property
     def no_of_student(self):
+        if self.__no_of_student is None:
+            self.__no_of_student = self.get_no_of_student()
         return self.__no_of_student
 
     def db_disconnect(self):
@@ -52,8 +53,8 @@ class MyQuerySQLite(object):
         if flag:
             inserted_data = []
             for i in xrange(len(data)):
-                sid = data[i][0] + self.__no_of_student
-                name = data[i][1][0] + str(int(data[i][1][1:]) + self.__no_of_student)
+                sid = data[i][0] + self.no_of_student
+                name = data[i][1][0] + str(int(data[i][1][1:]) + self.no_of_student)
                 inserted_data.append((sid, name, data[i][2], data[i][3]))
             try:
                 self.cursor.executemany('INSERT INTO classA VALUES (?, ?, ?, ?)', inserted_data)

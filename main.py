@@ -74,7 +74,7 @@ if __name__ == '__main__':
     obj.open_connection()
 
     # 0. Generate data and insert data into database
-    obj.insert_new_data(is_insert=False)
+    obj.insert_new_data(is_insert=True)
 
     # 1.Display students' name by giving gender (default: all gender)
     obj.display_student_names_by_gender()
