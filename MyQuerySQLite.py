@@ -11,11 +11,15 @@ class MyQuerySQLite(object):
         self.subject_map = {0: 'all', 1: 'chinese', 2: 'english', 3: 'math'}
         self.db_name = db_name
         self.db_table = db_table
+        self.conn = None
+        self.cursor = None
         self.__no_of_student = None
 
     def db_connect(self):
-        self.conn = sqlite3.connect(self.db_name)
-        self.cursor = self.conn.cursor()
+        if self.conn is None:
+            self.conn = sqlite3.connect(self.db_name)
+        if self.cursor is None:
+            self.cursor = self.conn.cursor()
         self.__create_table(self.db_table)
 
     @property
@@ -30,6 +34,7 @@ class MyQuerySQLite(object):
 
     def __create_table(self, table_name='classA'):
         sql = '''CREATE TABLE if not exists %s (sid INTERGER, name TEXT, gender TEXT, score BLOB)''' % table_name
+        result = []
         try:
             result = self.cursor.execute(sql)
         except:
@@ -71,6 +76,7 @@ class MyQuerySQLite(object):
         else:
             sql += "IS NOT NULL"
 
+        result = []
         try:
             result = self.cursor.execute(sql)
         except:
@@ -80,6 +86,7 @@ class MyQuerySQLite(object):
     # Get #of students
     def get_no_of_student(self):
         sql = '''SELECT COUNT(DISTINCT sid) FROM classA WHERE sid IS NOT NULL'''
+        no = 0
         try:
             result = self.cursor.execute(sql)
             no = [x[0] for x in result][0]
@@ -90,6 +97,7 @@ class MyQuerySQLite(object):
     # Get Score data 
     def __get_score_data(self):
         sql = '''SELECT name,score FROM classA'''
+        data = []
         try:
             data = self.cursor.execute(sql)
         except:
