@@ -6,21 +6,21 @@ from collections import defaultdict
 
 class MyQuerySQLite(object):
     def __init__(self, db_name, db_table):
-        self.n_subject = 3
-        self.n_tlv = 6
-        self.subject_map = {0: 'all', 1: 'chinese', 2: 'english', 3: 'math'}
-        self.db_name = db_name
-        self.db_table = db_table
-        self.conn = None
-        self.cursor = None
+        self.__n_subject = 3
+        self.__n_tlv = 6
+        self.__subject_map = None
+        self.__db_name = db_name
+        self.__db_table = db_table
+        self.__conn = None
+        self.__cursor = None
         self.__no_of_student = None
 
     def db_connect(self):
-        if self.conn is None:
-            self.conn = sqlite3.connect(self.db_name)
-        if self.cursor is None:
-            self.cursor = self.conn.cursor()
-        self.__create_table(self.db_table)
+        if self.__conn is None:
+            self.__conn = sqlite3.connect(self.__db_name)
+        if self.__cursor is None:
+            self.__cursor = self.__conn.cursor()
+        self.__create_table(self.__db_table)
 
     @property
     def no_of_student(self):
@@ -28,15 +28,21 @@ class MyQuerySQLite(object):
             self.__no_of_student = self.get_no_of_student()
         return self.__no_of_student
 
+    @property
+    def subject_map(self):
+        if self.__subject_map is None:
+            self.__subject_map = {0: 'all', 1: 'chinese', 2: 'english', 3: 'math'}
+        return self.__subject_map
+
     def db_disconnect(self):
-        self.cursor.close()
-        self.conn.close()
+        self.__cursor.close()
+        self.__conn.close()
 
     def __create_table(self, table_name='classA'):
         sql = '''CREATE TABLE if not exists %s (sid INTERGER, name TEXT, gender TEXT, score BLOB)''' % table_name
         result = []
         try:
-            result = self.cursor.execute(sql)
+            result = self.__cursor.execute(sql)
         except:
             print "create new table failed!"
         return result
@@ -62,8 +68,8 @@ class MyQuerySQLite(object):
                 name = data[i][1][0] + str(int(data[i][1][1:]) + self.no_of_student)
                 inserted_data.append((sid, name, data[i][2], data[i][3]))
             try:
-                self.cursor.executemany('INSERT INTO classA VALUES (?, ?, ?, ?)', inserted_data)
-                self.conn.commit()
+                self.__cursor.executemany('INSERT INTO classA VALUES (?, ?, ?, ?)', inserted_data)
+                self.__conn.commit()
             except:
                 print 'Insert data failed!'
 
@@ -78,7 +84,7 @@ class MyQuerySQLite(object):
 
         result = []
         try:
-            result = self.cursor.execute(sql)
+            result = self.__cursor.execute(sql)
         except:
             print "Query Students' name failed"
         return [student for student in result]
@@ -88,7 +94,7 @@ class MyQuerySQLite(object):
         sql = '''SELECT COUNT(DISTINCT sid) FROM classA WHERE sid IS NOT NULL'''
         no = 0
         try:
-            result = self.cursor.execute(sql)
+            result = self.__cursor.execute(sql)
             no = [x[0] for x in result][0]
         except:
             print "getNoOfStudent failed!"
@@ -99,20 +105,20 @@ class MyQuerySQLite(object):
         sql = '''SELECT name,score FROM classA'''
         data = []
         try:
-            data = self.cursor.execute(sql)
+            data = self.__cursor.execute(sql)
         except:
             print "__getScoreData failed!"
 
-        score = [{}] * self.n_subject
+        score = [{}] * self.__n_subject
         for x in data:
             name = x[0]
             score_data = str(x[1]).split("0x")[1:]
 
-            for i in xrange(self.n_subject):
-                tag = int(score_data[self.n_tlv * i], 16)
-                length = int(score_data[self.n_tlv * i + 1], 16)
+            for i in xrange(self.__n_subject):
+                tag = int(score_data[self.__n_tlv * i], 16)
+                length = int(score_data[self.__n_tlv * i + 1], 16)
                 if length == 4:
-                    value = int(score_data[self.n_tlv * i + self.n_tlv - 1], 16)
+                    value = int(score_data[self.__n_tlv * i + self.__n_tlv - 1], 16)
                 else:
                     value = 0
                 category = tag - 1
@@ -154,7 +160,7 @@ class MyQuerySQLite(object):
         if score.count({}) == len(score):
             return []
         else:
-            for i in xrange(self.n_subject):
+            for i in xrange(self.__n_subject):
                 for k in score[i].keys():
                     sum_score[k] += score[i][k]
             rank = sorted(sum_score.items(), key=operator.itemgetter(1))
