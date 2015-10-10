@@ -64,6 +64,7 @@ class SQLQuery(object):
         if flag:
             inserted_data = []
             for i in xrange(len(data)):
+                print "# student:", self.no_of_student
                 sid = data[i][0] + self.no_of_student
                 name = data[i][1][0] + str(int(data[i][1][1:]) + self.no_of_student)
                 inserted_data.append((sid, name, data[i][2], data[i][3]))

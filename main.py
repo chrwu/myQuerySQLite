@@ -19,7 +19,7 @@ class DisplayDBContent(object):
             print "Student's name: %s" % student[0]
 
     def display_no_of_student(self):
-        print "There are %s students in classA" % self.__mgr.get_no_of_student()
+        print "There are %s students in classA" % self.__mgr.no_of_student #get_no_of_student()
 
     # Display the highest Score People by subject
     def display_highest_score(self, subject='all'):
@@ -41,7 +41,7 @@ class DisplayDBContent(object):
 
     # Display Ranking list
     def display_ranking_list(self):
-        data = self.__mgr.get_ranking_list()[::-1]
+        data = self.__mgr.get_ranking_list()[::-1]  
         for i in xrange(self.__mgr.get_no_of_student()):
             print "rank:", i + 1, " name:%s total score:%s" % data[i]
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     # 0. Generate data and insert data into database
     data = dsp.generate_data()
 
-    dsp.insert_new_data(data, is_insert=True)
+    dsp.insert_new_data(data, is_insert=False)
 
     # 1.Display students' name by giving gender (default: all gender)
     dsp.display_student_names_by_gender()
